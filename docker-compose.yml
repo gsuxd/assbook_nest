@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+    db:
+        image: 'postgres:latest'
+        volumes:
+        - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+        - postgres_data:/var/lib/postgresql/data/
+        restart: "on-failure"
+        environment: 
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${DB_NAME}
+            - PGPORT=${DB_PORT}
+            - POSTGRES_USER=${POSTGRES_USER}
+        ports:
+            - '5432'
+        env_file:
+            - .env
+    dev:
+        container_name: assbook_server_dev
+        image: assbook_server_dev:1.0.0
+        build:
+            context: .
+            target: development
+            dockerfile: ./Dockerfile
+        command: yarn start:debug
+        ports:
+            - 3000:3000
+            - 9229:9229
+        volumes:
+            - .:/usr/src/app
+            - /usr/src/app/node_modules
+        restart: unless-stopped
+        depends_on:
+            - db
+    prod:
+        container_name: assbook_server_prod
+        image: assbook_server_prod:1.0.0
+        build:
+            context: .
+            target: production
+            dockerfile: ./Dockerfile
+        command: yarn start:prod
+        ports:
+            - 3000:3000
+            - 9229:9229
+        volumes:
+            - .:/usr/src/app
+            - /usr/src/app/node_modules
+        depends_on:
+            - db
+        restart: unless-stopped
+
+volumes:
+    postgres_data:
